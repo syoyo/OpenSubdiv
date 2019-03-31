@@ -249,7 +249,7 @@ if( METAL_FOUND )
 
     list(APPEND GPU_SOURCE_FILES ${METAL_SOURCE_FILES})
 
-    
+
 
     list(APPEND PUBLIC_HEADER_FILES ${METAL_PUBLIC_HEADERS})
     list(APPEND KERNEL_FILES
@@ -370,7 +370,7 @@ set_target_properties(osd_cpu_obj
         FOLDER "opensubdiv"
 )
 
-if( GPU_SOURCE_FILES ) 
+if( GPU_SOURCE_FILES )
     add_library(osd_gpu_obj
         OBJECT
             ${GPU_SOURCE_FILES}
@@ -396,16 +396,16 @@ install(
         GROUP_READ
         WORLD_READ )
 
-if (ANDROID)
-    install(
-        FILES
-            Android.mk
-        DESTINATION
-            "${LIBRARY_OUTPUT_PATH_ROOT}"
-        PERMISSIONS
-            OWNER_READ
-            GROUP_READ
-            WORLD_READ )
-endif()
+#if (ANDROID)
+#    install(
+#        FILES
+#            Android.mk
+#        DESTINATION
+#            "${LIBRARY_OUTPUT_PATH_ROOT}"
+#        PERMISSIONS
+#            OWNER_READ
+#            GROUP_READ
+#            WORLD_READ )
+#endif()
 
 #-------------------------------------------------------------------------------
