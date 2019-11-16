@@ -302,6 +302,7 @@ option(NO_CUDA "Disable CUDA backend" OFF)
 option(NO_OPENCL "Disable OpenCL backend" OFF)
 option(NO_CLEW "Disable CLEW wrapper library" OFF)
 option(NO_OPENGL "Disable OpenGL support")
+option(NO_GLES "Disable GLES support" ON)
 option(NO_METAL "Disable Metal support" OFF)
 option(NO_DX "Disable DirectX support")
 option(NO_TESTS "Disable all tests")
@@ -458,7 +459,7 @@ else()
     endif()
 endif()
 
-if(OPENGLES_FOUND)
+if(OPENGLES_FOUND AND NOT NO_GLES)
     add_definitions(
         -DOPENSUBDIV_HAS_OPENGLES
     )
@@ -591,7 +592,7 @@ if (WIN32)
             "environment variable."
         )
     endif()
-    
+
     # Link examples & regressions statically against Osd for
     # Windows until all the kinks can be worked out.
     if( OSD_GPU )
@@ -599,7 +600,7 @@ if (WIN32)
     else()
         set( OSD_LINK_TARGET osd_static_cpu )
     endif()
-    
+
 endif()
 
 
@@ -736,7 +737,7 @@ macro(_add_glfw_executable target folder)
     _add_possibly_cuda_executable(${target} ${folder} ${ARGN})
 
 #
-# manuelk : commenting this out as it seems to be causing more problems than 
+# manuelk : commenting this out as it seems to be causing more problems than
 # it is worth. Moving glfw as a native git recursive dependency will make this
 # redundant anyway.
 #
