@@ -218,7 +218,8 @@ elseif(MSVC)
 
     list(APPEND OSD_COMPILER_FLAGS
                     /W3     # Use warning level recommended for production purposes.
-                    /WX     # Treat all compiler warnings as errors.
+                    # Disable since OSD fails to compile on VS2019.
+                    #/WX     # Treat all compiler warnings as errors.
 
                     # warning C4005: macro redefinition
                     /wd4005
