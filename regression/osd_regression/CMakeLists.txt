@@ -24,6 +24,7 @@
 
 include_directories(
     "${OPENSUBDIV_INCLUDE_DIR}"
+    "${OPENGL_LOADER_INCLUDE_DIRS}"
     "${GLFW_INCLUDE_DIR}"
 )
 
@@ -33,16 +34,11 @@ set(SOURCE_FILES
 
 set(PLATFORM_LIBRARIES
     "${OSD_LINK_TARGET}"
-    "${OPENGL_LIBRARY}"
+    "${OPENGL_LOADER_LIBRARIES}"
     "${GLFW_LIBRARIES}"
 )
 
-if ( GLEW_FOUND )
-    include_directories("${GLEW_INCLUDE_DIR}")
-    list(APPEND PLATFORM_LIBRARIES "${GLEW_LIBRARY}")
-endif()
-
-_add_executable(osd_regression "regression"
+osd_add_executable(osd_regression "regression"
     "${SOURCE_FILES}"
     $<TARGET_OBJECTS:regression_common_obj>
 )
@@ -52,7 +48,6 @@ target_link_libraries(osd_regression
 )
 
 install(TARGETS osd_regression DESTINATION "${CMAKE_BINDIR_BASE}")
-
 
 if (NOT NO_GLTESTS)
     add_test(osd_regression ${EXECUTABLE_OUTPUT_PATH}/osd_regression)

@@ -60,13 +60,6 @@ else()
     set_source_files_properties("${BUNDLE_FILES}" PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
 endif()
 
-# XXX: This is unfortunate, we should probably refactor examples_common_obj
-# to separate out the GL from the Metal dependencies so that we don't end up
-# in the situation where we have to link in GLFW for mtlViewer.
-if (GLFW_FOUND)
-    list(APPEND PLATFORM_LIBRARIES "${GLFW_LIBRARIES}")
-endif()
-
 include_directories(
     "${OPENSUBDIV_INCLUDE_DIR}"
     "${METAL_INCLUDE_DIR}"
@@ -85,17 +78,17 @@ list(APPEND PLATFORM_LIBRARIES
     "-framework QuartzCore"
 )
 
-_stringify("mtlViewer.metal" INC_FILES)
+osd_stringify("mtlViewer.metal" INC_FILES)
 include_directories("${CMAKE_CURRENT_BINARY_DIR}")
 
-_add_executable(mtlViewer "examples/mtlViewer"
+osd_add_executable(mtlViewer "examples/mtlViewer"
     MACOSX_BUNDLE
     "${PLATFORM_FILES}"
     "${INC_FILES}"
     "${BUNDLE_FILES}"
     $<TARGET_OBJECTS:regression_common_obj>
     $<TARGET_OBJECTS:regression_far_utils_obj>
-    $<TARGET_OBJECTS:examples_common_obj>
+    $<TARGET_OBJECTS:examples_common_mtl_obj>
 )
 
 

@@ -125,9 +125,9 @@ if (CMAKE_COMPILER_IS_GNUCC)
 endif()
 
 # Detect Clang (until a cmake version provides built-in variables)
-if("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+if(${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
     set(CMAKE_COMPILER_IS_CLANGCC 1)
-elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel")
+elseif(${CMAKE_CXX_COMPILER_ID} MATCHES "Intel")
     set(CMAKE_COMPILER_IS_ICC 1)
 endif()
 
@@ -307,10 +307,18 @@ option(NO_METAL "Disable Metal support" OFF)
 option(NO_DX "Disable DirectX support")
 option(NO_TESTS "Disable all tests")
 option(NO_GLTESTS "Disable GL tests")
+option(NO_GLEW "Disable use of GLEW" ON)
 option(NO_GLFW "Disable components depending on GLFW" OFF)
 option(NO_GLFW_X11 "Disable GLFW components depending on X11" OFF)
 
 option(OPENSUBDIV_GREGORY_EVAL_TRUE_DERIVATIVES "Enable true derivative evaluation for Gregory basis patches" OFF)
+
+option(BUILD_SHARED_LIBS "Build shared libraries" ON)
+
+# Save the current value of BUILD_SHARED_LIBS and restore it after
+# processing Find* modules, since some of the Find* modules invoked
+# below may wind up stomping over this value.
+set(build_shared_libs "${BUILD_SHARED_LIBS}")
 
 set(OSD_GPU FALSE)
 
@@ -352,10 +360,17 @@ if (OPENGL_FOUND AND NOT IOS)
     add_definitions(
         -DOPENSUBDIV_HAS_OPENGL
     )
-    if (APPLE)
-        find_package(GLEW)
+    if (NOT NO_GLEW)
+        if (APPLE)
+            find_package(GLEW)
+        else()
+            find_package(GLEW REQUIRED)
+        endif()
+    endif()
+    if(GLEW_FOUND)
+        add_definitions( -DOSD_USES_GLEW )
     else()
-        find_package(GLEW REQUIRED)
+        add_definitions( -DOSD_USES_INTERNAL_GLAPILOADER )
     endif()
 endif()
 
@@ -369,6 +384,8 @@ if (NOT NO_DOC)
 else()
     set(DOXYGEN_EXECUTABLE )
 endif()
+
+set(BUILD_SHARED_LIBS "${build_shared_libs}")
 
 # Warn about missing dependencies that will cause parts of OpenSubdiv to be
 # disabled.  Also, add preprocessor defines that can be used in the source
@@ -424,13 +441,49 @@ if(GLFW_FOUND AND (GLFW_VERSION VERSION_EQUAL 3.0 OR GLFW_VERSION VERSION_GREATE
     add_definitions( -DGLFW_VERSION_3 )
 endif()
 
-# note: perhaps rename this to be more consistent, e.g. OPENSUBDIV_USES_GLEW
-if(GLEW_FOUND)
-    add_definitions( -DOSD_USES_GLEW )
+macro(osd_detect_gl_version header)
+
+   if (EXISTS "${header}")
+       file(STRINGS "${header}" VERSION_4_2 REGEX "^#define GL_VERSION_4_2.*$")
+       if (VERSION_4_2)
+           set(OPENGL_4_2_FOUND TRUE)
+       else ()
+           message(WARNING "OpenGL 4.2 dependent features not enabled")
+       endif ()
+
+       file(STRINGS "${header}" VERSION_4_3 REGEX "^#define GL_VERSION_4_3.*$")
+       if (VERSION_4_3)
+           SET(OPENGL_4_3_FOUND TRUE)
+       else ()
+           message(WARNING "OpenGL 4.3 dependent features not enabled")
+       endif ()
+   endif ()
+
+endmacro()
+
+if(GLEW_FOUND AND GLEW_INCLUDE_DIR)
+
+    osd_detect_gl_version(${GLEW_INCLUDE_DIR}/GL/glew.h)
+    set(OPENGL_LOADER_INCLUDE_DIRS
+        ${GLEW_INCLUDE_DIR}
+        ${PROJECT_SOURCE_DIR}/glLoader)
+    set(OPENGL_LOADER_LIBRARIES
+        ${GLEW_LIBRARY}
+        ${OPENGL_gl_LIBRARY})
+
+elseif(OPENGL_FOUND)
+
+    osd_detect_gl_version(${PROJECT_SOURCE_DIR}/glLoader/glApi.h)
+    set(OPENGL_LOADER_INCLUDE_DIRS
+        ${OPENGL_INCLUDE_DIR}
+        ${PROJECT_SOURCE_DIR}/glLoader)
+    set(OPENGL_LOADER_LIBRARIES
+        ${OPENGL_gl_LIBRARY})
+
 endif()
 
 # note : (GLSL transform feedback kernels require GL 4.2)
-if(GLEW_FOUND AND OPENGL_4_2_FOUND)
+if(OPENGL_4_2_FOUND)
     add_definitions(
         -DOPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK
     )
@@ -445,7 +498,7 @@ else()
 endif()
 
 # note : (GLSL compute shader kernels require GL 4.3)
-if(GLEW_FOUND AND OPENGL_4_3_FOUND)
+if(OPENGL_4_3_FOUND)
     add_definitions(
         -DOPENSUBDIV_HAS_GLSL_COMPUTE
     )
@@ -562,11 +615,19 @@ if( OPENSUBDIV_GREGORY_EVAL_TRUE_DERIVATIVES )
     add_definitions(-DOPENSUBDIV_GREGORY_EVAL_TRUE_DERIVATIVES)
 endif()
 
-# Link examples & regressions dynamically against Osd
-if( OSD_GPU )
-    set( OSD_LINK_TARGET osd_dynamic_cpu osd_dynamic_gpu )
+# Link examples & regressions against Osd
+if( BUILD_SHARED_LIBS )
+    if( OSD_GPU )
+        set( OSD_LINK_TARGET osd_dynamic_gpu osd_dynamic_cpu )
+    else()
+        set( OSD_LINK_TARGET osd_dynamic_cpu )
+    endif()
 else()
-    set( OSD_LINK_TARGET osd_dynamic_cpu )
+    if( OSD_GPU )
+        set( OSD_LINK_TARGET osd_static_gpu osd_static_cpu )
+    else()
+        set( OSD_LINK_TARGET osd_static_cpu )
+    endif()
 endif()
 
 if (WIN32)
@@ -611,7 +672,7 @@ endif()
 
 add_custom_target( public_headers )
 
-macro(_add_doxy_headers headers)
+macro(osd_add_doxy_headers headers)
     if (NOT NO_DOC AND DOXYGEN_FOUND)
         file(RELATIVE_PATH path "${OpenSubdiv_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}" )
 
@@ -650,7 +711,7 @@ endmacro()
 # characters we would need raw string literals from C++11 to do this directly.
 # To avoid depending on C++11 we instead use a small tool called "line_quote"
 # to generate source files that are suitable for direct inclusion.
-function(_stringify src_files varname)
+function(osd_stringify src_files varname)
 
     set(inc_files "")
 
@@ -675,7 +736,7 @@ function(_stringify src_files varname)
 endfunction()
 
 # Macro wrapper for adding a non-cuda dependent executable
-macro(_add_executable target folder)
+macro(osd_add_executable target folder)
 
     add_executable(${target} ${ARGN})
 
@@ -694,7 +755,7 @@ endmacro()
 
 # Macro for adding a cuda executable if cuda is found and a regular
 # executable otherwise.
-macro(_add_possibly_cuda_executable target folder)
+macro(osd_add_possibly_cuda_executable target folder)
     if(CUDA_FOUND)
         cuda_add_executable(${target} ${ARGN})
     else()
@@ -716,7 +777,7 @@ endmacro()
 
 # Macro for adding a cuda library if cuda is found and a regular
 # library otherwise.
-macro(_add_possibly_cuda_library target folder)
+macro(osd_add_possibly_cuda_library target folder)
     if(CUDA_FOUND)
         cuda_add_library(${target} ${ARGN})
     else()
@@ -732,31 +793,9 @@ endmacro()
 
 
 # Macro for adding a (potentially cuda) GLFW executable.
-macro(_add_glfw_executable target folder)
+macro(osd_add_glfw_executable target folder)
 
-    _add_possibly_cuda_executable(${target} ${folder} ${ARGN})
-
-#
-# manuelk : commenting this out as it seems to be causing more problems than
-# it is worth. Moving glfw as a native git recursive dependency will make this
-# redundant anyway.
-#
-
-#    if(WIN32)
-#        # Windows needs some of its dependency dll's copied into the same
-#        # directory as the executable.
-#        set(LIBRARIES ${GLFW_LIBRARIES})
-#        foreach (LIB ${LIBRARIES} )
-#            string(REPLACE ".lib" ".dll" DLL ${LIB})
-#            string(REPLACE ".LIB" ".DLL" DLL ${DLL})
-#            add_custom_command(
-#                TARGET ${target} POST_BUILD
-#                COMMAND ${CMAKE_COMMAND} -E copy_if_different
-#                    ${DLL}
-#                    $<TARGET_FILE_DIR:${target}>
-#            )
-#        endforeach()
-#    endif()
+    osd_add_possibly_cuda_executable(${target} ${folder} ${ARGN})
 
     if(APPLE)
         set_property (TARGET ${target} APPEND_STRING PROPERTY
@@ -781,6 +820,10 @@ endif()
 
 if (NOT NO_TESTS)
     enable_testing()
+endif()
+
+if (NOT NO_OPENGL)
+    add_subdirectory(glLoader)
 endif()
 
 add_subdirectory(opensubdiv)

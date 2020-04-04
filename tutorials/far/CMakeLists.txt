@@ -21,9 +21,9 @@
 #   KIND, either express or implied. See the Apache License for the specific
 #   language governing permissions and limitations under the Apache License.
 #
-macro(_add_far_tutorial NAME)
+macro(osd_add_far_tutorial NAME)
 
-     _add_executable(${NAME} "tutorials/far"
+     osd_add_executable(${NAME} "tutorials/far"
         ${ARGN}
         $<TARGET_OBJECTS:sdc_obj>
         $<TARGET_OBJECTS:vtr_obj>
@@ -47,6 +47,7 @@ set(TUTORIALS
     tutorial_4_3
     tutorial_5_1
     tutorial_5_2
+    tutorial_5_3
 )
 
 foreach(tutorial ${TUTORIALS})

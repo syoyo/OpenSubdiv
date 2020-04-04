@@ -42,13 +42,6 @@ if (NOT NO_LIB)
     )
 
     #---------------------------------------------------------------------------
-    if( PTEX_FOUND )
-        include_directories( "${PTEX_INCLUDE_DIR}" )
-        list(APPEND PLATFORM_CPU_LIBRARIES
-            ${PTEX_LIBRARY}
-        )
-    endif()
-
     if( OPENMP_FOUND )
         if (CMAKE_COMPILER_IS_GNUCXX)
             list(APPEND PLATFORM_CPU_LIBRARIES gomp)
@@ -67,25 +60,15 @@ if (NOT NO_LIB)
     endif()
 
     if( OPENGL_FOUND )
-        if (NOT "${OPENGL_INCLUDE_DIR}" STREQUAL "")
-            include_directories("${OPENGL_INCLUDE_DIR}")
-        endif()
-        if (GLEW_FOUND)
-            include_directories("${GLEW_INCLUDE_DIR}")
-        endif()
+        include_directories(${OPENGL_LOADER_INCLUDE_DIRS})
         list(APPEND PLATFORM_GPU_LIBRARIES
-            ${OPENGL_LIBRARY}
+            ${OPENGL_LOADER_LIBRARIES}
         )
+        set(OPENGL_LOADER_OBJS $<TARGET_OBJECTS:glLoader_obj>)
     elseif( OPENGLES_FOUND )
         include_directories("${OPENGLES_INCLUDE_DIR}")
         list(APPEND PLATFORM_GPU_LIBRARIES
             ${OPENGLES_LIBRARIES}
-        )
-    endif()
-
-    if( OPENGL_4_2_FOUND OR OPENGL_4_3_FOUND)
-        list(APPEND PLATFORM_GPU_LIBRARIES
-            ${GLEW_LIBRARY}
         )
     endif()
 
@@ -151,9 +134,9 @@ if (NOT NO_LIB)
         $<TARGET_OBJECTS:osd_cpu_obj>
     )
 
-    set_target_properties(osd_static_cpu 
-        PROPERTIES 
-            OUTPUT_NAME osdCPU 
+    set_target_properties(osd_static_cpu
+        PROPERTIES
+            OUTPUT_NAME osdCPU
             CLEAN_DIRECT_OUTPUT 1
             FOLDER "opensubdiv"
     )
@@ -167,10 +150,11 @@ if (NOT NO_LIB)
     if( OSD_GPU )
         # this macro uses FindCUDA.cmake to compile .cu kernel files
         # the target then adds the other obj dependencies and include files
-        _add_possibly_cuda_library(osd_static_gpu "opensubdiv"
+        osd_add_possibly_cuda_library(osd_static_gpu "opensubdiv"
                 STATIC
                 version.cpp
                 $<TARGET_OBJECTS:osd_gpu_obj>
+                ${OPENGL_LOADER_OBJS}
                 ${CUDA_KERNEL_FILES}
         )
         set_target_properties(osd_static_gpu PROPERTIES OUTPUT_NAME osdGPU CLEAN_DIRECT_OUTPUT 1)
@@ -184,7 +168,7 @@ if (NOT NO_LIB)
 
 
     # Build dynamic libs  ----------------------------------
-    if (NOT WIN32 AND NOT IOS)
+    if (BUILD_SHARED_LIBS AND NOT WIN32 AND NOT IOS)
 
         # generate dynamic-link targets
 
@@ -221,10 +205,11 @@ if (NOT NO_LIB)
 
         #---------------------------------------------------
         if( OSD_GPU )
-            _add_possibly_cuda_library(osd_dynamic_gpu "opensubdiv"
+            osd_add_possibly_cuda_library(osd_dynamic_gpu "opensubdiv"
                 SHARED
                 version.cpp
                 $<TARGET_OBJECTS:osd_gpu_obj>
+                ${OPENGL_LOADER_OBJS}
                 ${CUDA_KERNEL_FILES}
             )
 
@@ -293,6 +278,7 @@ if (NOT NO_LIB)
             $<TARGET_OBJECTS:far_obj>
             $<TARGET_OBJECTS:osd_cpu_obj>
             $<TARGET_OBJECTS:osd_gpu_obj>
+            ${OPENGL_LOADER_OBJS}
         )
 
         set_target_properties(
@@ -316,48 +302,55 @@ if (NOT NO_LIB)
              ARCHIVE DESTINATION "${CMAKE_LIBDIR_BASE}")
 
 
-        #shared framework 
-        add_library(osd_dynamic_framework
-            SHARED
-            version.cpp
-            $<TARGET_OBJECTS:sdc_obj>
-            $<TARGET_OBJECTS:vtr_obj>
-            $<TARGET_OBJECTS:far_obj>
-            $<TARGET_OBJECTS:osd_cpu_obj>
-            $<TARGET_OBJECTS:osd_gpu_obj>
-        )
-
-        set_target_properties(
-            osd_dynamic_framework
-            PROPERTIES
-            RPATH true
-            FRAMEWORK true
-            INSTALL_NAME_DIR "@rpath/OpenSubdiv.framework/OpenSubdiv"
-            INSTALL_RPATH "@executable_path/Frameworks;@loader_path/Frameworks"
-            OUTPUT_NAME OpenSubdiv
-            CLEAN_DIRECT_OUTPUT true
-        )
-
-        target_link_libraries(osd_dynamic_framework
-            ${PLATFORM_CPU_LIBRARIES} ${PLATFORM_GPU_LIBRARIES}
-        )
-
-        install( TARGETS osd_dynamic_framework
-             FRAMEWORK DESTINATION "${CMAKE_LIBDIR_BASE}"
-             LIBRARY DESTINATION "${CMAKE_LIBDIR_BASE}"
-             PUBLIC_HEADER  DESTINATION "${CMAKE_INCDIR_BASE}"
-             PRIVATE_HEADER  DESTINATION "${CMAKE_INCDIR_BASE}"
-             )
-
-        foreach(file ${PUBLIC_HEADER_FILES})
-            add_custom_command(TARGET osd_dynamic_framework POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/opensubdiv/${file}" "$<TARGET_FILE_DIR:osd_dynamic_framework>/Headers/${file}"
+        #shared framework
+        if (BUILD_SHARED_LIBS)
+            add_library(osd_dynamic_framework
+                SHARED
+                version.cpp
+                $<TARGET_OBJECTS:sdc_obj>
+                $<TARGET_OBJECTS:vtr_obj>
+                $<TARGET_OBJECTS:far_obj>
+                $<TARGET_OBJECTS:osd_cpu_obj>
+                $<TARGET_OBJECTS:osd_gpu_obj>
+                ${OPENGL_LOADER_OBJS}
             )
-        endforeach(file)
 
-        add_custom_command(TARGET osd_dynamic_framework POST_BUILD
-            COMMAND ln -sf "Versions/Current/Headers" "$<TARGET_FILE_DIR:osd_dynamic_framework>/../../Headers"
-        )
+            set_target_properties(
+                osd_dynamic_framework
+                PROPERTIES
+                RPATH true
+                FRAMEWORK true
+                INSTALL_NAME_DIR "@rpath/OpenSubdiv.framework/OpenSubdiv"
+                INSTALL_RPATH "@executable_path/Frameworks;@loader_path/Frameworks"
+                OUTPUT_NAME OpenSubdiv
+                CLEAN_DIRECT_OUTPUT true
+            )
+
+            target_link_libraries(osd_dynamic_framework
+                ${PLATFORM_CPU_LIBRARIES} ${PLATFORM_GPU_LIBRARIES}
+            )
+
+            install( TARGETS osd_dynamic_framework
+                 FRAMEWORK DESTINATION "${CMAKE_LIBDIR_BASE}"
+                 LIBRARY DESTINATION "${CMAKE_LIBDIR_BASE}"
+                 PUBLIC_HEADER  DESTINATION "${CMAKE_INCDIR_BASE}"
+                 PRIVATE_HEADER  DESTINATION "${CMAKE_INCDIR_BASE}"
+                 )
+
+            foreach(file ${PUBLIC_HEADER_FILES})
+                add_custom_command(TARGET osd_dynamic_framework POST_BUILD
+                    COMMAND ${CMAKE_COMMAND} -E copy
+                    "${CMAKE_SOURCE_DIR}/opensubdiv/${file}"
+                    "$<TARGET_FILE_DIR:osd_dynamic_framework>/Headers/${file}"
+                )
+            endforeach(file)
+
+            add_custom_command(TARGET osd_dynamic_framework POST_BUILD
+                COMMAND ln -sf
+                "Versions/Current/Headers"
+                "$<TARGET_FILE_DIR:osd_dynamic_framework>/../../Headers"
+            )
+        endif()
 
     endif()
 endif()

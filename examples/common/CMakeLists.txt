@@ -22,14 +22,7 @@
 #   language governing permissions and limitations under the Apache License.
 #
 
-set(EXAMPLES_COMMON_SHADER_FILES
-     glslPtexCommon.glsl
-     hlslPtexCommon.hlsl
-     mtlPtexCommon.metal
-)
-
 set(EXAMPLES_COMMON_SOURCE_FILES
-    argOptions.cpp
     font_image.cpp
     hdr_reader.cpp
     hud.cpp
@@ -39,7 +32,6 @@ set(EXAMPLES_COMMON_SOURCE_FILES
 )
 
 set(EXAMPLES_COMMON_HEADER_FILES
-    argOptions.h
     font_image.h
     hdr_reader.h
     hud.h
@@ -52,56 +44,10 @@ set(EXAMPLES_COMMON_HEADER_FILES
     viewerArgsUtils.h
 )
 
-if( OPENGL_FOUND AND (GLEW_FOUND AND GLFW_FOUND) OR (APPLE AND GLFW_FOUND))
-
-    list(APPEND EXAMPLES_COMMON_SOURCE_FILES
-        glControlMeshDisplay.cpp
-        glHud.cpp
-        glUtils.cpp
-        glShaderCache.cpp
-    )
-
-    list(APPEND EXAMPLES_COMMON_HEADER_FILES
-        glControlMeshDisplay.h
-        glHud.h
-        glUtils.h
-        glShaderCache.h
-    )
-
-    if (NOT "${OPENGL_INCLUDE_DIR}" STREQUAL "")
-        include_directories("${OPENGL_INCLUDE_DIR}")
-    endif()
-
-    if (GLEW_FOUND)
-        include_directories("${GLEW_INCLUDE_DIR}")
-    endif()
-
-    if (GLFW_FOUND)
-        include_directories("${GLFW_INCLUDE_DIR}")
-    endif()
-
-endif()
-
-
-if(DXSDK_FOUND)
-
-    list(APPEND EXAMPLES_COMMON_SOURCE_FILES
-        d3d11ControlMeshDisplay.cpp
-        d3d11Hud.cpp
-        d3d11Utils.cpp
-        d3d11ShaderCache.cpp
-    )
-
-    list(APPEND EXAMPLES_COMMON_HEADER_FILES
-        d3d11ControlMeshDisplay.h
-        d3d11Hud.h
-        d3d11Utils.h
-        d3d11ShaderCache.h
-    )
-
-    include_directories("${DXSDK_INCLUDE_DIR}")
-
-endif()
+include_directories(
+    "${OPENSUBDIV_INCLUDE_DIR}"
+    "${CMAKE_CURRENT_BINARY_DIR}"
+)
 
 if(OPENCL_FOUND)
     include_directories("${OPENCL_INCLUDE_DIRS}")
@@ -125,85 +71,167 @@ if(CUDA_FOUND)
     )
 endif()
 
+if(OPENGL_FOUND AND GLFW_FOUND)
+
+    list(APPEND EXAMPLES_COMMON_GL_SOURCE_FILES
+        glControlMeshDisplay.cpp
+        glHud.cpp
+        glUtils.cpp
+        glShaderCache.cpp
+    )
+
+    list(APPEND EXAMPLES_COMMON_GL_HEADER_FILES
+        glControlMeshDisplay.h
+        glHud.h
+        glUtils.h
+        glShaderCache.h
+    )
+
+    include_directories(${OPENGL_LOADER_INCLUDE_DIRS})
+
+    if (GLFW_FOUND)
+        include_directories("${GLFW_INCLUDE_DIR}")
+    endif()
+
+    add_library(examples_common_gl_obj
+        OBJECT
+            ${EXAMPLES_COMMON_SOURCE_FILES}
+            ${EXAMPLES_COMMON_HEADER_FILES}
+            ${EXAMPLES_COMMON_GL_SOURCE_FILES}
+            ${EXAMPLES_COMMON_GL_HEADER_FILES}
+    )
+
+    set_target_properties(examples_common_gl_obj
+        PROPERTIES
+            FOLDER "examples"
+    )
+
+endif()
+
+
+if(DXSDK_FOUND)
+
+    list(APPEND EXAMPLES_COMMON_DX11_SOURCE_FILES
+        d3d11ControlMeshDisplay.cpp
+        d3d11Hud.cpp
+        d3d11Utils.cpp
+        d3d11ShaderCache.cpp
+    )
+
+    list(APPEND EXAMPLES_COMMON_DX11_HEADER_FILES
+        d3d11ControlMeshDisplay.h
+        d3d11Hud.h
+        d3d11Utils.h
+        d3d11ShaderCache.h
+    )
+
+    include_directories("${DXSDK_INCLUDE_DIR}")
+
+    add_library(examples_common_dx11_obj
+        OBJECT
+            ${EXAMPLES_COMMON_SOURCE_FILES}
+            ${EXAMPLES_COMMON_HEADER_FILES}
+            ${EXAMPLES_COMMON_DX11_SOURCE_FILES}
+            ${EXAMPLES_COMMON_DX11_HEADER_FILES}
+    )
+
+    set_target_properties(examples_common_dx11_obj
+        PROPERTIES
+            FOLDER "examples"
+    )
+
+endif()
+
 if(METAL_FOUND)
     include_directories("${METAL_INCLUDE_DIR}")
-    list(APPEND EXAMPLES_COMMON_SOURCE_FILES
+    list(APPEND EXAMPLES_COMMON_MTL_SOURCE_FILES
         mtlControlMeshDisplay.mm
         mtlUtils.mm
         mtlHud.mm
     )
-    list(APPEND EXAMPLES_COMMON_HEADER_FILES
+    list(APPEND EXAMPLES_COMMON_MTL_HEADER_FILES
         mtlControlMeshDisplay.h
         mtlUtils.h
         mtlHud.h
     )
+
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+
+    add_library(examples_common_mtl_obj
+        OBJECT
+            ${EXAMPLES_COMMON_SOURCE_FILES}
+            ${EXAMPLES_COMMON_HEADER_FILES}
+            ${EXAMPLES_COMMON_MTL_SOURCE_FILES}
+            ${EXAMPLES_COMMON_MTL_HEADER_FILES}
+    )
+
+    set_target_properties(examples_common_mtl_obj
+        PROPERTIES
+            FOLDER "examples"
+    )
+
 endif()
 
 #-------------------------------------------------------------------------------
 if( PTEX_FOUND )
-    list(APPEND EXAMPLES_COMMON_HEADER_FILES
+    list(APPEND EXAMPLES_COMMON_PTEX_HEADER_FILES
         ptexMipmapTextureLoader.h
     )
-    list(APPEND EXAMPLES_COMMON_SOURCE_FILES
+    list(APPEND EXAMPLES_COMMON_PTEX_SOURCE_FILES
         ptexMipmapTextureLoader.cpp
     )
     if( OPENGL_FOUND )
-        list(APPEND EXAMPLES_COMMON_SOURCE_FILES
+        list(APPEND EXAMPLES_COMMON_PTEX_SOURCE_FILES
             glPtexMipmapTexture.cpp
         )
-        list(APPEND EXAMPLES_COMMON_HEADER_FILES
+        list(APPEND EXAMPLES_COMMON_PTEX_HEADER_FILES
             glPtexMipmapTexture.h
         )
     endif()
     if( DXSDK_FOUND )
-        list(APPEND EXAMPLES_COMMON_SOURCE_FILES
+        list(APPEND EXAMPLES_COMMON_PTEX_SOURCE_FILES
             d3d11PtexMipmapTexture.cpp
         )
-        list(APPEND EXAMPLES_COMMON_HEADER_FILES
+        list(APPEND EXAMPLES_COMMON_PTEX_HEADER_FILES
             d3d11PtexMipmapTexture.h
         )
     endif()
     if( METAL_FOUND )
-        list(APPEND EXAMPLES_COMMON_SOURCE_FILES
+        list(APPEND EXAMPLES_COMMON_PTEX_SOURCE_FILES
             mtlPtexMipmapTexture.mm
         )
-        list(APPEND EXAMPLES_COMMON_HEADER_FILES
+        list(APPEND EXAMPLES_COMMON_PTEX_HEADER_FILES
             mtlPtexMipmapTexture.h
         )
     endif()
-    include_directories( "${PTEX_INCLUDE_DIR}" )
-    list(APPEND PLATFORM_CPU_LIBRARIES
-        ${PTEX_LIBRARY}
+
+    set(EXAMPLES_COMMON_PTEX_SHADER_FILES
+         glslPtexCommon.glsl
+         hlslPtexCommon.hlsl
+         mtlPtexCommon.metal
     )
+
+set(EXAMPLES_COMMON_PTEX_INC_FILES )
+    if(EXAMPLES_COMMON_PTEX_SHADER_FILES)
+        osd_stringify("${EXAMPLES_COMMON_PTEX_SHADER_FILES}"
+                      EXAMPLES_COMMON_PTEX_INC_FILES)
+
+        source_group("Shaders" FILES ${EXAMPLES_COMMON_PTEX_SHADER_FILES})
+        source_group("Inc" FILES ${EXAMPLES_COMMON_PTEX_INC_FILES})
+    endif()
+
+    include_directories( "${PTEX_INCLUDE_DIR}" )
+
+    add_library(examples_common_ptex_obj
+        OBJECT
+            ${EXAMPLES_COMMON_PTEX_SOURCE_FILES}
+            ${EXAMPLES_COMMON_PTEX_HEADER_FILES}
+            ${EXAMPLES_COMMON_PTEX_INC_FILES}
+    )
+
+    set_target_properties(examples_common_ptex_obj
+        PROPERTIES
+            FOLDER "examples"
+    )
+
 endif()
-#-------------------------------------------------------------------------------
-
-include_directories(
-    "${OPENSUBDIV_INCLUDE_DIR}"
-    "${CMAKE_CURRENT_BINARY_DIR}"
-)
-
-set(INC_FILES )
-
-if(OPENGL_FOUND OR DXSDK_FOUND OR METAL_FOUND)
-_stringify("${EXAMPLES_COMMON_SHADER_FILES}" INC_FILES)
-
-source_group("Shaders" FILES ${EXAMPLES_COMMON_SHADER_FILES})
-source_group("Inc" FILES ${INC_FILES})
-endif()
-
-add_library(examples_common_obj
-    OBJECT
-        ${EXAMPLES_COMMON_SOURCE_FILES}
-        ${EXAMPLES_COMMON_HEADER_FILES}
-        ${INC_FILES}
-)
-
-set_target_properties(examples_common_obj
-    PROPERTIES
-        FOLDER "examples"
-)
-
-
-

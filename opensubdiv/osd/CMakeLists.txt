@@ -160,7 +160,7 @@ if( OPENGL_4_2_FOUND )
         glslXFBKernel.glsl
     )
     list(APPEND PLATFORM_GPU_LIBRARIES
-        ${GLEW_LIBRARY}
+        ${OPENGL_LOADER_LIBRARIES}
     )
 endif()
 
@@ -183,7 +183,7 @@ if( OPENGL_4_3_FOUND )
         glslComputeKernel.glsl
     )
     list(APPEND PLATFORM_GPU_LIBRARIES
-        ${GLEW_LIBRARY}
+        ${OPENGL_LOADER_LIBRARIES}
     )
 endif()
 
@@ -362,7 +362,7 @@ list(APPEND DOXY_HEADER_FILES ${CUDA_PUBLIC_HEADERS})
 
 #-------------------------------------------------------------------------------
 
-_stringify("${KERNEL_FILES}" INC_FILES)
+osd_stringify("${KERNEL_FILES}" INC_FILES)
 
 include_directories("${CMAKE_CURRENT_BINARY_DIR}")
 
@@ -398,7 +398,7 @@ if( GPU_SOURCE_FILES )
     )
 endif()
 
-_add_doxy_headers( "${DOXY_HEADER_FILES}" )
+osd_add_doxy_headers( "${DOXY_HEADER_FILES}" )
 
 install(
     FILES

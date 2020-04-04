@@ -22,8 +22,7 @@
 //   language governing permissions and limitations under the Apache License.
 //
 
-
-#include "../common/glUtils.h"
+#include "glLoader.h"
 
 #include <GLFW/glfw3.h>
 GLFWwindow* g_window=0;
@@ -37,12 +36,13 @@ GLFWmonitor* g_primary=0;
 OpenSubdiv::Osd::GLMeshInterface *g_mesh;
 
 #include "../../regression/common/far_utils.h"
-#include "../common/argOptions.h"
+#include "../../regression/common/arg_utils.h"
 #include "../common/viewerArgsUtils.h"
 #include "../common/stopwatch.h"
 #include "../common/simple_math.h"
 #include "../common/glHud.h"
 #include "../common/glShaderCache.h"
+#include "../common/glUtils.h"
 
 #include "init_shapes.h"
 
@@ -988,7 +988,7 @@ initHUD() {
     g_hud.AddPullDownButton(shading_pulldown, "Shaded", 1, g_wire==1);
     g_hud.AddPullDownButton(shading_pulldown, "Wire+Shaded", 2, g_wire==2);
 
-    g_hud.AddSlider("Brush size", 10, 500, g_brushSize,
+    g_hud.AddSlider("Brush size", 10.0f, 500.0f, (float)g_brushSize,
                      350, -60, 40, true, callbackBrushSize, 0);
 
     for (int i = 1; i < 11; ++i) {
@@ -1138,27 +1138,16 @@ int main(int argc, char ** argv) {
         glfwTerminate();
         return 1;
     }
+
     glfwMakeContextCurrent(g_window);
+
+    GLUtils::InitializeGL();
+    GLUtils::PrintGLVersion();
+
     glfwSetKeyCallback(g_window, keyboard);
     glfwSetCursorPosCallback(g_window, motion);
     glfwSetMouseButtonCallback(g_window, mouse);
     glfwSetWindowCloseCallback(g_window, windowClose);
-    GLUtils::PrintGLVersion();
-
-#if defined(OSD_USES_GLEW)
-#ifdef CORE_PROFILE
-    // this is the only way to initialize glew correctly under core profile context.
-    glewExperimental = true;
-#endif
-    if (GLenum r = glewInit() != GLEW_OK) {
-        printf("Failed to initialize glew. Error = %s\n", glewGetErrorString(r));
-        exit(1);
-    }
-#ifdef CORE_PROFILE
-    // clear GL errors which were generated during glewInit()
-    glGetError();
-#endif
-#endif
 
     initGL();
 

@@ -22,40 +22,39 @@
 #   language governing permissions and limitations under the Apache License.
 #
 
-# *** paintTest ***
+# *** glPaintTest ***
 
 set(SHADER_FILES
      shader.glsl
      paintShader.glsl
 )
 
-list(APPEND PLATFORM_LIBRARIES
-    "${OSD_LINK_TARGET}"
-    "${OPENGL_LIBRARY}"
-    "${GLEW_LIBRARY}"
-    "${GLFW_LIBRARIES}"
-)
-
 include_directories(
     "${OPENSUBDIV_INCLUDE_DIR}"
-    "${GLEW_INCLUDE_DIR}"
+    "${OPENGL_LOADER_INCLUDE_DIRS}"
     "${GLFW_INCLUDE_DIR}"
+)
+
+list(APPEND PLATFORM_LIBRARIES
+    "${OSD_LINK_TARGET}"
+    "${OPENGL_LOADER_LIBRARIES}"
+    "${GLFW_LIBRARIES}"
 )
 
 if( OPENCL_FOUND )
     include_directories("${OPENCL_INCLUDE_DIRS}")
 endif()
 
-_stringify("${SHADER_FILES}" INC_FILES)
+osd_stringify("${SHADER_FILES}" INC_FILES)
 
 include_directories("${CMAKE_CURRENT_BINARY_DIR}")
 
-_add_glfw_executable(glPaintTest "examples"
+osd_add_glfw_executable(glPaintTest "examples"
     glPaintTest.cpp
     "${SHADER_FILES}"
     "${INC_FILES}"
     $<TARGET_OBJECTS:regression_common_obj>
-    $<TARGET_OBJECTS:examples_common_obj>
+    $<TARGET_OBJECTS:examples_common_gl_obj>
 )
 
 target_link_libraries(glPaintTest

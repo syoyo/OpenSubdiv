@@ -25,7 +25,8 @@
 #ifndef OPENSUBDIV_EXAMPLES_GL_SHADER_CACHE_H
 #define OPENSUBDIV_EXAMPLES_GL_SHADER_CACHE_H
 
-#include <opensubdiv/osd/opengl.h>
+#include "glLoader.h"
+
 #include <map>
 #include <string>
 #include "./shaderCache.h"

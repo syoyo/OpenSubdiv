@@ -45,7 +45,8 @@ if (WIN32)
             "${PROJECT_SOURCE_DIR}/extern/glew/include"
         DOC "The directory where GL/glew.h resides" )
 
-    if ("${CMAKE_GENERATOR}" MATCHES "[Ww]in64")
+    if ("${CMAKE_GENERATOR}" MATCHES "[Ww]in64" OR
+        "${CMAKE_GENERATOR_PLATFORM}" MATCHES "x64")
         set(ARCH x64)
     else()
         set(ARCH x86)
@@ -97,28 +98,6 @@ if (${CMAKE_HOST_UNIX})
             /opt/local/lib
             NO_DEFAULT_PATH
             DOC "The GLEW library")
-endif ()
-
-if (GLEW_INCLUDE_DIR AND EXISTS "${GLEW_INCLUDE_DIR}/GL/glew.h")
-
-   file(STRINGS "${GLEW_INCLUDE_DIR}/GL/glew.h" GLEW_4_2 REGEX "^#define GL_VERSION_4_2.*$")
-   if (GLEW_4_2)
-       set(OPENGL_4_2_FOUND TRUE)
-   else ()
-       message(WARNING
-       "glew-1.7.0 or newer needed for supporting OpenGL 4.2 dependent features"
-       )
-   endif ()
-
-   file(STRINGS "${GLEW_INCLUDE_DIR}/GL/glew.h" GLEW_4_3 REGEX "^#define GL_VERSION_4_3.*$")
-   if (GLEW_4_3)
-       SET(OPENGL_4_3_FOUND TRUE)
-   else ()
-       message(WARNING
-       "glew-1.9.0 or newer needed for supporting OpenGL 4.3 dependent features"
-       )
-   endif ()
-
 endif ()
 
 find_package_handle_standard_args(GLEW

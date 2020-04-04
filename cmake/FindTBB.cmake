@@ -69,7 +69,8 @@ set (TBB_LIB_ARCH "")
 
 if (WIN32)
 
-    if ("${CMAKE_GENERATOR}" MATCHES "[Ww]in64")
+    if ("${CMAKE_GENERATOR}" MATCHES "[Ww]in64" OR
+        "${CMAKE_GENERATOR_PLATFORM}" MATCHES "x64")
         set(WINPATH intel64)
     else ()
         set(WINPATH ia32)
@@ -105,11 +106,7 @@ else()
 endif()
 
 # List library files
-foreach(TBB_LIB tbb             tbb_debug
-                tbbmalloc       tbbmalloc_debug
-                tbbmalloc_proxy tbbmalloc_proxy_debug
-                tbb_preview     tbb_preview_debug)
-
+foreach(TBB_LIB tbb             tbb_debug)
 
     find_library(TBB_${TBB_LIB}_LIBRARY
         NAMES

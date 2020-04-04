@@ -22,10 +22,11 @@
 //   language governing permissions and limitations under the Apache License.
 //
 
+#include "glLoader.h"
+
 #include "../osd/glPatchTable.h"
 
 #include "../far/patchTable.h"
-#include "../osd/opengl.h"
 #include "../osd/cpuPatchTable.h"
 
 namespace OpenSubdiv {
@@ -36,6 +37,9 @@ namespace Osd {
 GLPatchTable::GLPatchTable() :
     _patchIndexBuffer(0), _patchParamBuffer(0),
     _patchIndexTexture(0), _patchParamTexture(0) {
+
+    // Initialize internal OpenGL loader library if necessary
+    OpenSubdiv::internal::GLLoader::libraryInitializeGL();
 }
 
 GLPatchTable::~GLPatchTable() {

@@ -32,29 +32,25 @@ set(SHADER_FILES
 
 include_directories(
     "${OPENSUBDIV_INCLUDE_DIR}"
+    "${OPENGL_LOADER_INCLUDE_DIRS}"
     "${GLFW_INCLUDE_DIR}"
 )
 
 list(APPEND PLATFORM_LIBRARIES
     "${OSD_LINK_TARGET}"
-    "${OPENGL_LIBRARY}"
+    "${OPENGL_LOADER_LIBRARIES}"
     "${GLFW_LIBRARIES}"
 )
-
-if ( GLEW_FOUND )
-    include_directories("${GLEW_INCLUDE_DIR}")
-    list(APPEND PLATFORM_LIBRARIES "${GLEW_LIBRARY}")
-endif()
 
 if( OPENCL_FOUND )
     include_directories("${OPENCL_INCLUDE_DIRS}")
 endif()
 
-_stringify("${SHADER_FILES}" INC_FILES)
+osd_stringify("${SHADER_FILES}" INC_FILES)
 
 include_directories("${CMAKE_CURRENT_BINARY_DIR}")
 
-_add_glfw_executable(farViewer "examples"
+osd_add_glfw_executable(farViewer "examples"
     farViewer.cpp
     gl_fontutils.cpp
     gl_mesh.cpp
@@ -65,7 +61,7 @@ _add_glfw_executable(farViewer "examples"
     $<TARGET_OBJECTS:vtr_obj>
     $<TARGET_OBJECTS:far_obj>
     $<TARGET_OBJECTS:regression_common_obj>
-    $<TARGET_OBJECTS:examples_common_obj>
+    $<TARGET_OBJECTS:examples_common_gl_obj>
 )
 target_link_libraries(farViewer
     ${PLATFORM_LIBRARIES}

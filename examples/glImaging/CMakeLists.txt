@@ -22,29 +22,23 @@
 #   language governing permissions and limitations under the Apache License.
 #
 
-include_directories(
-    "${OPENSUBDIV_INCLUDE_DIR}"
-    "${GLFW_INCLUDE_DIR}"
-)
+# *** glImaging ***
 
 set(SHADER_FILES
      shader.glsl
 )
 
-set(SOURCE_FILES
-    glImaging.cpp
+include_directories(
+    "${OPENSUBDIV_INCLUDE_DIR}"
+    "${OPENGL_LOADER_INCLUDE_DIRS}"
+    "${GLFW_INCLUDE_DIR}"
 )
 
 set(PLATFORM_LIBRARIES
     "${OSD_LINK_TARGET}"
-    "${OPENGL_LIBRARY}"
+    "${OPENGL_LOADER_LIBRARIES}"
     "${GLFW_LIBRARIES}"
 )
-
-if ( GLEW_FOUND )
-    include_directories("${GLEW_INCLUDE_DIR}")
-    list(APPEND PLATFORM_LIBRARIES "${GLEW_LIBRARY}")
-endif()
 
 if ( OPENCL_FOUND )
     list(APPEND PLATFORM_LIBRARIES
@@ -53,16 +47,16 @@ if ( OPENCL_FOUND )
     include_directories( "${OPENCL_INCLUDE_DIRS}" )
 endif()
 
-_stringify("${SHADER_FILES}" INC_FILES)
+osd_stringify("${SHADER_FILES}" INC_FILES)
 
 include_directories("${CMAKE_CURRENT_BINARY_DIR}")
 
-_add_glfw_executable(glImaging "examples"
-    "${SOURCE_FILES}"
+osd_add_glfw_executable(glImaging "examples"
+    glImaging.cpp
     "${SHADER_FILES}"
     "${INC_FILES}"
     $<TARGET_OBJECTS:regression_common_obj>
-    $<TARGET_OBJECTS:examples_common_obj>
+    $<TARGET_OBJECTS:examples_common_gl_obj>
 )
 
 target_link_libraries(glImaging
