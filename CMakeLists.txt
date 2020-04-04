@@ -218,7 +218,8 @@ elseif(MSVC)
 
     list(APPEND OSD_COMPILER_FLAGS
                     /W3     # Use warning level recommended for production purposes.
-                    /WX     # Treat all compiler warnings as errors.
+                    # Disable since OSD fails to compile on VS2019.
+                    #/WX     # Treat all compiler warnings as errors.
 
                     # warning C4005: macro redefinition
                     /wd4005
@@ -356,7 +357,9 @@ endif()
 if(APPLE AND NOT NO_METAL)
     find_package(Metal)
 endif()
-if (OPENGL_FOUND AND NOT IOS)
+
+# Win32 may report OPENGL_FOUND even if `NO_OPENGL` is set
+if (OPENGL_FOUND AND NOT NO_OPENGL AND NOT IOS)
     add_definitions(
         -DOPENSUBDIV_HAS_OPENGL
     )
